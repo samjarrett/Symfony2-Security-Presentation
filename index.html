@@ -1,0 +1,648 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+	<title>Symfony2 Melbourne - Security Presentation</title>
+
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<link rel="stylesheet" href="css/pres.css">
+	<link rel="stylesheet" href="css/prettify.css">
+	<script src="js/libs/modernizr-2.0.6.min.js"></script>
+</head>
+<body>
+	<div id="res"></div>
+	
+	<div id="presentation">
+		<div class="slide introduction">
+			<div class="wifi">
+				<h1>Who wants WIFI?</h1>
+				<h2>Access point: melbsf2</h2>
+				<h3>Password: melbsf2m</h3>
+			</div>
+		</div>
+		
+		<div class="slide introduction">
+			<h1>Security Basics</h1>
+			<h2>8th November</h2>
+			<h3>Sam Jarrett</h3>
+			<img src="images/lolcat-security.jpg" class="security-lolcat">
+		</div>
+		
+		<div class="slide">
+			<h1>About me</h1>
+			<img src="images/me.jpg" alt="who is this guy, and how did he get such a cool 'stache?" title="who is this guy, and how did he get such a cool 'stache?">
+			<div class="about-me-copy">
+				<h2>Sam Jarrett</h2>
+				<h3>Web Developer at Flint Interactive</h3>
+				<p>Open source developer, Symfony contributor &amp; enthusiast.</p>
+				<p>
+					5 years PHP &amp; web commercial experience,<br>
+					Zend Certified PHP 5.2 (5.3 in progress).<br>
+					#melbsf2 event co-organiser.
+				</p>
+			</div>
+			<p>Lover of all things &lt; 141 characters &amp; you can follow me <a href="http://twitter.com/sammyjarrett">@sammyjarrett</a>.</p>
+		</div>
+		
+		<div class="slide">
+			<h1>What's a Security?</h1>
+			<p>Ideally, this is you right now:</p>
+			<ul>
+				<li>You've started playing with Symfony2 and Doctrine2,</li>
+				<li>You've looked at Controllers, Annotations, Doctrine Entities, the Entity Manager, etc, and are fairly comfortable working with these concepts. Anyone who's attended some of these previous sessions should be OK.</li>
+			</ul>
+			<p>Maybe some of these could apply to you..</p>
+			<ul>
+				<li>I've read the Security manual online and got confused.</li>
+				<li>The manual didn't answer my questions</li>
+				<li>I laugh in the face of manuals! Hah hah hah..</li>
+				<li>What's a manual? There's a manual for Symfony?</li>
+			</ul>
+		</div>
+		
+		<div class="slide">
+			<h1>What's in it for me?</h1>
+			<p>Hopefully after tonight, you'll be able to:</p>
+			<ul>
+				<li>Set up restricted URLs of your project to require a user to be logged in,</li>
+				<li>Restrict some controller actions to authenticated users only,</li>
+				<li>Change items in a template <span class="quip">(view)</span> based on the user being logged in</li>
+				<li>Log a user in using a simple login form</li>
+				<li>Access that user entity from any controller or template</li>
+			</ul>
+			<p>
+				And later in the night...
+				Julien will present FOSUserBundle.
+			</p>
+		</div>
+		
+		<div class="slide">
+			<h1>Infrastructure</h1>
+			<p>The Symfony2 security component is broken up into two main parts: authentication and authorisation.</p>
+			
+			<h4>Authentication:</h4>
+			<ul>
+				<li>logs the user in</li>
+				<li>verifies credentials</li>
+				<li>can use many methods (username/password, X.509 certificate, other*)</li>
+			</ul>
+			
+			<h4><strike>Authorization</strike> Authorisation:</h4>
+			<ul>
+				<li>checks if the user has <strong>permission</strong> to access a resource</li>
+				<li>roles, ACL, SSL/HTTPS</li>
+				<li><span class="quip">From the book:</span> &ldquo;Authorization provides a standard and powerful way to decide if a user can access any resource (a URL, a model object, a method call, ...)&rdquo;</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Itinerary</h1>
+			<h4>1. Authentication</h4>
+			<ol>
+				<li>
+					Configuring the Firewall, part 1<br>
+					<span class="quip">HTTP basic authentication &amp; some hardcoded users</span>
+				</li>
+				<li>
+					Configuring the Firewall, part 2<br>
+					<span class="quip">A more real-world use: Using Doctrine &amp; a login form</span>
+				</li>
+				<li>
+					Expanding our knowledge: Some additional food for thought<br>
+					<span class="quip">Using multiple Entities, the future of authentication</span>
+				</li>
+			</ol>
+			<h4>2. Authorization</h4>
+			<ol>
+				<li>
+					Securing a controller<br>
+					<span class="quip">Restricting URL patterns, functions &amp; altering logic based on <abbr title="Whether user is logged in, is an administrator, etc">user context</abbr></span>
+				</li>
+				<li>
+					Tweaking twig<br>
+					<span class="quip">Changing template content based on <abbr title="Whether user is logged in, is an administrator, etc">user context</abbr></span>
+				</li>
+				<li>
+					Advanced concepts<br>
+					<span class="quip">Object-based access control, etc</span>
+				</li>
+			</ol>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>1.1. Configuring the Firewall, part 1</h1>
+			<ul>
+				<li>Security configuration happens in <code>app/config/security.yml</code>.</li>
+				<li>Contents will be explained in detail in following pages</li>
+				<li>Example security.yml file below</li>
+			</ul>
+			<pre class="prettyprint lang-yaml">
+security:
+	encoders:
+		Symfony\Component\Security\Core\User\User: plaintext
+	role_hierarchy:
+		ROLE_ADMIN: ROLE_USER
+		ROLE_SUPER_ADMIN: [ROLE_USER, ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH]
+	providers:
+		in_memory:
+			users:
+				user:  { password: userpass, roles: [ 'ROLE_USER' ] }
+				admin: { password: adminpass, roles: [ 'ROLE_ADMIN' ] }
+	firewalls:
+		secured_area:
+			pattern: ^/secure/
+			http_basic:
+				realm: "Secured Area"
+			stateless: true</pre>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Encoders</h1>
+			<ul>
+				<li>All security entities need to have a password encoder</li>
+				<li>Handle encoding &amp; comparing passwords for you</li>
+				<li>PHP function <a href="http://au.php.net/hash_algos"><code>hash_algos()</code></a> to display available encoding methods</li>
+				<li>Plaintext means not encoded</li>
+			</ul>
+			<pre class="prettyprint lang-yaml">
+security:
+	encoders:
+		Symfony\Component\Security\Core\User\User: plaintext</pre>
+			<p>Remarks:</p>
+			<ul>
+				<li><code>Symfony\Component\Security\Core\User\User</code>: Full class name (including namespace) of the user entity; currently set to use in-memory entity</li>
+				<li><code>plaintext</code>: This is the encoder used; sha512 is commonly used; you can write your own.</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Roles</h1>
+			<ul>
+				<li>All users must be assigned to one or more roles.</li>
+				<li>Roles are prefixed with ROLE_</li>
+				<li>Users typically obtain ROLE_USER, administrators ROLE_ADMIN.</li>
+				<li>Roles are hierarchical &amp; user may have multiple roles.</li>
+			</ul>
+			<pre class="prettyprint lang-yaml">
+security:
+	...
+	role_hierarchy:
+		ROLE_ADMIN: ROLE_USER
+		ROLE_SUPER_ADMIN: [ROLE_USER, ROLE_ADMIN, ROLE_ALLOWED_TO_SWITCH]</pre>
+			<p>Remarks:</p>
+			<ul>
+				<li><code>ROLE_ADMIN: ROLE_USER</code>: Defines ROLE_ADMIN as being an extension of ROLE_USER.</li>
+				<li><code>ROLE_SUPER_ADMIN: [ROLE_USER, ...]</code>: ROLE_SUPER_ADMIN is an extension of multiple roles.</li>
+				<li><code>ROLE_ALLOWED_TO_SWITCH</code>: Symfony provides a number of reserved role names to provide special functionality. ROLE_ALLOWED_TO_SWITCH allows a user to swap to another user without having to log in as them</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>User Providers</h1>
+			<ul>
+				<li>What your users authenticate against.</li>
+				<li>Can be in-memory (users are all defined before the application boots),</li>
+				<li>Doctrine, or</li>
+				<li>Completely custom entity.</li>
+			</ul>
+			<pre class="prettyprint lang-yaml">
+security:
+	...
+	providers:
+		in_memory:
+			users:
+				user:  { password: userpass, roles: [ 'ROLE_USER' ] }
+				admin: { password: adminpass, roles: [ 'ROLE_ADMIN' ] }</pre>
+			<p>Remarks:</p>
+			<ul>
+				<li><code>in_memory</code>: This is the name of my provider.</li>
+				<li><code>users</code>: List of hard-coded username, password and roles</li>
+				<li><code>user:	 { password: userpass, roles: [ 'ROLE_USER' ] }</code>: Example of a hard-coded user entry.</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Firewalls</h1>
+			<ul>
+				<li>Defines authenticated/secure areas of application</li>
+				<li>Application can contain multiple</li>
+				<li>Each firewall is independent</li>
+				<li>Config is evaluated top to bottom</li>
+			</ul>
+			<pre class="prettyprint lang-yaml">
+security:
+	...
+	firewalls:
+		secured_area:
+			pattern: ^/secure/
+			http_basic:
+				realm: "Secured Area"
+			stateless: true</pre>
+			<p>Remarks:</p>
+			<ul>
+				<li><code>secured_area</code>: The name of my firewall.</li>
+				<li><code>pattern: ^/secure/</code>: Regular expression for what URLs are covered.</li>
+				<li><code>http_basic</code>: Authentication method in use. Symfony includes HTTP basic &amp; digest, login form, and x.509 certificates. Extensions are available to add other methods.</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>1.2. Configuring the Firewall, part 2</h1>
+			<ul>
+				<li>Doctrine-based</li>
+				<li>Login form</li>
+				<li>Simple!</li>
+				<li>Example security.yml below</li>
+			</ul>
+			<pre class="prettyprint lang-yaml">
+security:
+	encoders:
+		MelbSymfony2\Bundle\SecurityExampleBundle\Entity\User: plaintext
+	...
+	providers:
+			main:
+				entity: { class: MelbSymfony2\Bundle\SecurityExampleBundle\Entity\User, property: username }
+	...
+	firewalls:
+		login:
+			pattern: ^/secure/login$
+			security: false
+		secured_area:
+			pattern: ^/secure/
+			form_login:
+				check_path: /secure/login_check
+				login_path: /secure/login
+			logout:
+				path: /secure/logout
+				target: /</pre>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Introducing our new user provider!</h1>
+			<ul>
+				<li>In-memory provider is changed to a Doctrine entity</li>
+				<li>Entities must implement <abbr title="Symfony\Component\Security\Core\User\UserInterfac">UserInterface</abbr> interface</li>
+				<li>Symfony/Doctrine handle the rest</li>
+			</ul>
+			<pre class="prettyprint lang-yaml">
+encoders:
+	MelbSymfony2\Bundle\SecurityExampleBundle\Entity\User: plaintext
+...
+providers:
+		main:
+			entity: { class: MelbSymfony2\Bundle\SecurityExampleBundle\Entity\User, property: username }</pre>
+			<p>Remarks:</p>
+			<ul>
+				<li><code>entity: { class: ...</code>: Class name of our Doctrine entity.</li>
+				<li>Every authenticate-able user object must have an encoder.</li>
+				<li><code>property: username</code>: The property used to get the login username. UserInterface requires your class to define a getUsername() method.</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Some new firewall rules</h1>
+			<ul>
+				<li>You must disable security to your login page</li>
+				<li>Example below</li>
+			</ul>
+			<pre class="prettyprint lang-yaml">
+firewalls:
+	login:
+		pattern: ^/secure/login$
+		security: false</pre>
+			<p>Remarks:</p>
+			<ul>
+				<li><code>pattern: ^/secure/login$</code>: URL to our application's login page.</li>
+				<li><code>security: false</code>: Disables further firewall processing for that URL pattern.</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Some more new firewall rules</h1>
+			<pre class="prettyprint lang-yaml">
+firewalls:
+	...
+	secured_area:
+		pattern: ^/secure/
+		form_login:
+			check_path: /secure/login_check
+			login_path: /secure/login
+		logout:
+			path: /secure/logout
+			target: /</pre>
+			<p>Remarks:</p>
+			<ul>
+				<li><code>form_login</code>: Use web form to login.</li>
+				<li><code>check_path</code>: URL where the form submits to, to authenticate credentials.</li>
+				<li><code>login_path</code>: URL where the login form is, for authentication failures.</li>
+				<li><code>logout</code>: Handles users logging out.</li>
+				<li>Many more options for configuration available. Review <a href="http://symfony.com/doc/current/book/security.html#using-a-traditional-login-form">Symfony book</a> for more info!</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>We add a Controller...</h1>
+			<pre class="prettyprint">
+// namspace & use declarations
+
+class SecurityController extends Controller
+{
+	/**
+	 * @Route("/secure/login", name="user_login")
+	 * @Template
+	 */
+	public function loginAction()
+	{
+		$request = $this->getRequest();
+		$session = $request->getSession();
+
+		// get the login error if there is one
+		if ($request->attributes->has(SecurityContext::AUTHENTICATION_ERROR)) {
+			$error = $request->attributes->get(SecurityContext::AUTHENTICATION_ERROR);
+		} else {
+			$error = $session->get(SecurityContext::AUTHENTICATION_ERROR);
+		}
+
+		return array(
+			'last_username' => $session->get(SecurityContext::LAST_USERNAME),
+			'error' => $error,
+		);
+	}
+}</pre>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Our Controller in more detail</h1>
+			<pre class="prettyprint">
+/**
+ * @Route("/secure/login", name="user_login")
+ * @Template
+ */</pre>
+			<ul>
+				<li>Route for our insecure login form</li>
+			</ul>
+
+			<pre class="prettyprint">
+if ($request->attributes->has(SecurityContext::AUTHENTICATION_ERROR)) {
+	$error = $request->attributes->get(SecurityContext::AUTHENTICATION_ERROR);
+} else {
+	$error = $session->get(SecurityContext::AUTHENTICATION_ERROR);
+}</pre>
+			<ul>
+				<li>Authentication error message is stored in Session / Request as an attribute.</li>
+			</ul>
+			
+			<pre class="prettyprint">
+return array(
+	'last_username' => $session->get(SecurityContext::LAST_USERNAME)
+	//... 
+);</pre>
+			<ul>
+				<li>Last username entered.</li>
+				<li>Template use only</li>
+				<li>Security lockouts, etc</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Some twig magic + a working login form!</h1>
+			<ul>
+				<li>Login forms are simple</li>
+				<li>Can't use forms framework to generate</li>
+			</ul>
+			<pre class="prettyprint">
+{% if error %}
+	&lt;div>{{ error.message }}&lt;/div>
+{% endif %}
+
+&lt;form action="{{ path('login_check') }}" method="post">
+	&lt;label for="username">Username:&lt;/label>
+	&lt;input type="text" id="username" name="_username" value="{{ last_username }}" />
+
+	&lt;label for="password">Password:&lt;/label>
+	&lt;input type="password" id="password" name="_password" />
+
+	&lt;input type="submit" name="login" />
+&lt;/form></pre>
+			<p>Remarks:</p>
+			<ul>
+				<li><code>{% if error %}</code>: If error is present, user has failed authentication.</li>
+				<li><code>{{ path('login_check') }}</code>: Form submits to login_check path from <code>security.yml</code>.</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>1.3. Expanding our knowledge</h1>
+			<h3>We've made it here - well done!</h3>
+			<p><strong>We now have a fully functioning authentication system.</strong></p>
+
+			<p>Some further thinking...</p>
+			<ul>
+				<li>Symfony supports authenticating on multiple providers. <a href="http://symfony.com/doc/current/book/security.html#using-multiple-user-providers">http://symfony.com/.../security.html#using...-providers</a></li>
+				<li>We can create a registration process using forms component. Extensions like <code>FOSUserBundle</code> can help.</li>
+				<li>We can add extensions for 3<sup>rd</sup> party login methods, such as Facebook, Google &amp; Twitter.</li>
+				<li>We can create custom login methods, eg SSO, LDAP, etc</li>
+			</ul>
+		</div>
+		
+		<div class="slide">
+			<h1>2.1. Securing a controller</h1>
+			<ul>
+				<li>Symfony provides multiple methods to secure our controllers.</li>
+				<li>Your application's layout will help determine which method is best.</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>security.yml Access Control Lists</h1>
+			<ul>
+				<li>Secure controllers by URL pattern.</li>
+				<li>Can restrict by roles, IP address.</li>
+				<li>Allows HTTP channel securing - http/https.</li>
+				<li>Symfony automatically redirects to http/https based upon the requirement.</li>
+				<li>Example below</li>
+			</ul>
+			<pre class="prettyprint lang-yaml">
+security:
+	...
+	access_control:
+		- { path: ^/admin/, roles: ROLE_ADMIN }
+		- { path: ^/admin/administrative-cron, ip: 127.0.0.1 }
+		- { path: ^/cart/checkout, requires_channel: https }</pre>
+			<p>Remarks:</p>
+			<ul>
+				<li><code>path: ^/...</code>: A regular expression pattern to match.</li>
+				<li><code>roles: ...</code>: Required roles for the user to access this resource.</li>
+				<li><code>ip: ...</code>: Required IP address for the user to access this resource.</li>
+				<li><code>requires_channel: ...</code>: Required channel to access this resource.</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Securing controller actions</h1>
+			<ul>
+				<li>Can use pure PHP</li>
+				<li>Can use JMS SecurityExtraBundle annotations</li>
+				<li>Example of using PHP &amp; modifying controller logic below</li>
+			</ul>
+			<pre class="prettyprint">
+// standard namespace &amp; use statements, plus the below:
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+
+class SecureController extends Controller
+	public function theLongSecureAction()
+	{
+		if (false === $this->get('security.context')->isGranted('ROLE_ADMIN')) {
+			throw new AccessDeniedException();
+		}
+
+		// ...
+	}
+}</pre>
+			<p>Remarks:</p>
+			<ul>
+				<li><code>$this->get('security.context')->isGranted()</code>: Check if current user has given role.</li>
+				<li><code>AccessDeniedException</code>: will direct user to login page, or throw 403 Forbidden.</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Securing using the JMS SecurityExtraBundle</h1>
+			<ul>
+				<li>Bundle created by <a href="http://twitter.com/JohannesMS">@JohannesMS</a>, included with Symfony.</li>
+				<li>Aspect-orientated approach, doesn't modify controller logic.</li>
+				<li>Does the same as above.</li>
+				<li>Revised example below</li>
+			</ul>
+			<pre class="prettyprint">
+// standard namespace &amp; use statements, plus the below:
+use JMS\SecurityExtraBundle\Annotation\Secure;
+
+class SecureController extends Controller
+	/** @Secure(roles="ROLE_USER") */
+	public function shorterSecureAction()
+	{
+		// ...
+	}
+}</pre>
+			<p>Further reading:</p>
+			<ul>
+				<li>Review online documentation for bundle: <a href="http://symfony.com/doc/current/bundles/JMSSecurityExtraBundle/index.html#annotations">http://symfony.com/.../JMSSecurityExtraBundle/#...</a>.</li>
+				<li>Expressions &amp; <code>@PreAuthorize</code> are very powerful.</p>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>Securing or changing controller logic</h1>
+			<ul>
+				<li>We can use the SecurityContext to change business logic.</li>
+				<li>Example below:</li>
+			</ul>
+			<pre class="prettyprint">
+// standard namespace &amp; use statements
+
+class AnotherController extends Controller
+	public function indexAction()
+	{
+		// ...
+		
+		if ($this->get('security.context')->isGranted('ROLE_ADMIN')) {
+			$variableOne = 'some arbitrary value';
+		} else {
+			$variableTwo = 'something else';
+		}
+
+		// ...
+	}
+}</pre>
+			<ul>
+				<li>Useful examples: change forms on page, add security flag to entities, redirect roles to different controllers completely.</li>
+			</ul>
+		</div>
+		
+		<div class="slide smaller-text">
+			<h1>2.2. Tweaking twig</h1>
+			<ul>
+				<li>
+					The <code>is_granted()</code> twig function is duplicate of <code>isGranted()</code> function in the<br>
+					security context.
+				</li>
+				<li>Example below.</li>
+			</ul>
+			<pre class="prettyprint">
+{% if is_granted('ROLE_USER') %}
+	This text is only shown to users who are logged in. 
+	The same can be used for any defined role!
+{% endif %}</pre>
+
+			<ul>
+				<li>Twig variable <code>app</code> has reference to user object.</li>
+				<li>Allows developer to customise display for users.</li>
+				<li>Example below.</li>
+			</ul>
+			<pre class="prettyprint">
+{% if app.user is not empty %}
+	Hello {{ app.user.username }}, welcome back!
+{% endif %}</pre>
+			<p>Further reading:</p>
+			<ul>
+				<li><code>app</code> has context of other <em>super variables</em>.</li>
+				<li>For more info, review <abbr title="Symfony\Bundle\FrameworkBundle\Templating\GlobalVariables">GlobalVariables</abbr> class.</p>
+		</div>
+		
+		<div class="slide">
+			<h1>2.3. Advanced concepts</h1>
+			<p>Beyond all that I've covered tonight, there were a few other things that those needing deeper authorisation control should check out...</p>
+			<ul>
+				<li>
+					Secure custom services using JMS SecurityExtraBundle.<br>
+					<span class="quip">Check out this Symfony cookbook article: <a href="http://symfony.com/doc/current/cookbook/security/securing_services.html">http://symfony.com/.../securing_services.html</a>.</span>
+				</li>
+				<li>
+					Domain object-level ACL.<br>
+					<span class="quip">Check out this Symfony cookbook article: <a href="http://symfony.com/doc/current/cookbook/security/acl.html">http://symfony.com/.../security/acl.html</a>.</span>
+				</li>
+			</ul>
+		</div>
+		
+		<div class="slide">
+			<h1>Finally...</h1>
+			<p>Security component is still more complex:</p>
+			<ul>
+				<li>Contains a voting system for access decisions.</li>
+				<li>Built in "Remember Me" authentication.</li>
+				<li>Impersonate users, using switch functionality.</li>
+				<li>and more? etc.</li>
+			</ul>
+			<p>But documentation is a problem. If possible, contribute to Documentation on Github.</p>
+			
+			<div class="smaller-text">
+				<p>Lastly, recognize..</p>
+				<ul>
+					<li>Big thanks to <a href="http://www.flintinteractive.com.au" class="flint">Flint Interactive</a> for providing our venue tonight &amp; sponsoring our meetup group. &lt;3</li>
+					<li>I've used a javascript based slideshow plugin called <a href="http://markdalgleish.com/projects/fathom/">Fathom.js</a>, developed by my coworker &amp; buddy <a href="http://twitter.com/markdalgleish">@markdalgleish</a>. It's awesome, so go check it out. Seriously.</li>
+					<li>Tweet using <strong>#melbsf2</strong> about this pres!</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+	<script>window.jQuery || document.write('<script src="js/libs/jquery-1.6.2.min.js"><\/script>')</script>
+
+	<script src="js/libs/fathom-1.2.2.min.js"></script>
+	<script src="js/libs/prettify/prettify.js"></script>
+	<script src="js/libs/prettify/lang-yaml.js"></script>
+
+	<script defer src="js/plugins.js"></script>
+	<script defer src="js/script.js"></script>
+
+	<!--<script> // Change UA-XXXXX-X to be your site's ID
+	window._gaq = [['_setAccount','UAXXXXXXXX1'],['_trackPageview'],['_trackPageLoadTime']];
+	Modernizr.load({
+	  load: ('https:' == location.protocol ? '//ssl' : '//www') + '.google-analytics.com/ga.js'
+	});
+	</script>-->
+</body>
+</html>
